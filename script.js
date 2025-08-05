@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function initAnimations() {
         // Add animation styles to elements
         const animatedElements = document.querySelectorAll(
-            '.service-content, .work-cards, .mission-content, .team-members, .contact-content'
+            '.service-content, .mission-content, .contact-content'
         );
 
         animatedElements.forEach(element => {
@@ -154,41 +154,115 @@ document.addEventListener('DOMContentLoaded', function() {
         document.head.appendChild(style);
     }
 
-    // Contact button functionality
-    function initContactButton() {
-        const ctaButton = document.querySelector('.cta-button');
-        if (ctaButton) {
-            ctaButton.addEventListener('click', function() {
-                // You can replace this with actual contact functionality
-                alert('연락처 기능을 추가해주세요!\n\n예시:\n- 이메일 링크\n- 연락처 폼\n- 전화번호');
+    // Contact form functionality
+    function initContactForm() {
+        const contactForm = document.querySelector('.contact-form');
+        if (contactForm) {
+            contactForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Get CSRF token
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                // Get form data
+                const formData = new FormData(this);
+                const inputs = this.querySelectorAll('input');
+                const data = {};
+                
+                inputs.forEach(input => {
+                    if (input.placeholder) {
+                        data[input.placeholder] = input.value.trim();
+                    }
+                });
+                
+                // Enhanced validation
+                if (!data['이름'] || !data['이메일'] || !data['제안 사항']) {
+                    alert('이름, 이메일, 제안 사항은 필수 입력 항목입니다.');
+                    return;
+                }
+                
+                // Email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(data['이메일'])) {
+                    alert('올바른 이메일 주소를 입력해주세요.');
+                    return;
+                }
+                
+                // Phone number validation (if provided)
+                if (data['연락처'] && data['연락처'].length > 0) {
+                    const phoneRegex = /^[0-9-+\s()]+$/;
+                    if (!phoneRegex.test(data['연락처'])) {
+                        alert('올바른 연락처 형식을 입력해주세요.');
+                        return;
+                    }
+                }
+                
+                // Input sanitization
+                Object.keys(data).forEach(key => {
+                    data[key] = data[key].replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+                    data[key] = data[key].replace(/[<>]/g, '');
+                });
+                
+                // Prepare data for submission
+                const submitData = {
+                    ...data,
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent.substring(0, 200) // Limit length
+                };
+                
+                // TODO: Replace with actual server endpoint
+                // fetch('/api/contact', {
+                //     method: 'POST',
+                //     headers: {
+                //         'Content-Type': 'application/json',
+                //         'X-CSRF-TOKEN': csrfToken
+                //     },
+                //     body: JSON.stringify(submitData)
+                // }).then(response => response.json())
+                //   .then(data => {
+                //       alert('제안이 성공적으로 전송되었습니다!');
+                //       this.reset();
+                //   })
+                //   .catch(error => {
+                //       alert('전송 중 오류가 발생했습니다. 다시 시도해주세요.');
+                //   });
+                
+                // For now, show success message
+                alert('제안이 성공적으로 전송되었습니다!\n\n빠른 시일 내에 연락드리겠습니다.');
+                
+                // Reset form
+                this.reset();
             });
 
-            // Add ripple effect
-            ctaButton.addEventListener('click', function(e) {
-                const ripple = document.createElement('span');
-                const rect = this.getBoundingClientRect();
-                const size = Math.max(rect.width, rect.height);
-                const x = e.clientX - rect.left - size / 2;
-                const y = e.clientY - rect.top - size / 2;
-                
-                ripple.style.width = ripple.style.height = size + 'px';
-                ripple.style.left = x + 'px';
-                ripple.style.top = y + 'px';
-                ripple.style.position = 'absolute';
-                ripple.style.borderRadius = '50%';
-                ripple.style.background = 'rgba(0, 0, 0, 0.1)';
-                ripple.style.transform = 'scale(0)';
-                ripple.style.animation = 'ripple 0.6s linear';
-                ripple.style.pointerEvents = 'none';
-                
-                this.style.position = 'relative';
-                this.style.overflow = 'hidden';
-                this.appendChild(ripple);
-                
-                setTimeout(() => {
-                    ripple.remove();
-                }, 600);
-            });
+            // Add ripple effect to submit button
+            const submitButton = document.querySelector('.submit-button');
+            if (submitButton) {
+                submitButton.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.width = ripple.style.height = size + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    ripple.style.position = 'absolute';
+                    ripple.style.borderRadius = '50%';
+                    ripple.style.background = 'rgba(0, 0, 0, 0.1)';
+                    ripple.style.transform = 'scale(0)';
+                    ripple.style.animation = 'ripple 0.6s linear';
+                    ripple.style.pointerEvents = 'none';
+                    
+                    this.style.position = 'relative';
+                    this.style.overflow = 'hidden';
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            }
         }
     }
 
@@ -242,7 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initHeroAnimation();
     initFloatingAnimation();
     initAnimations();
-    initContactButton();
+    initContactForm();
     initParallaxEffect();
     initSmoothScroll();
 

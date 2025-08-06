@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(netlify dev:*)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)"
+    ],
+    "deny": []
+  }
+}

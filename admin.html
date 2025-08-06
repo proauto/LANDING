@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PreVIT 연락처 관리</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin: 0;
+        }
+        
+        .controls {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .contact-card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 4px solid #007bff;
+        }
+        
+        .contact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .contact-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .contact-date {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .contact-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #555;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            color: #333;
+            word-break: break-word;
+        }
+        
+        .contact-proposal {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        
+        .proposal-label {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        
+        .proposal-text {
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .stats {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📧 PreVIT 연락처 관리</h1>
+        <p>웹사이트를 통해 접수된 연락처 목록을 확인할 수 있습니다.</p>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-number" id="contactCount">-</div>
+        <div class="stat-label">총 접수된 연락처</div>
+    </div>
+    
+    <div class="controls">
+        <button onclick="loadContacts()">🔄 새로고침</button>
+        <button onclick="exportContacts()">📥 CSV 다운로드</button>
+    </div>
+    
+    <div id="loading" class="loading" style="display: none;">
+        📡 연락처 데이터를 불러오는 중...
+    </div>
+    
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <div id="contacts"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://wfajhscwqfwygxtjlsqq.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmYWpoc2N3cWZ3eWd4dGpsc3FxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDQ2NDY4MiwiZXhwIjoyMDcwMDQwNjgyfQ.JdKKLaGbRO3B3FLpu_nuTpx8n2AXKaOv3Fq65iYXoE8';
+        
+        let contacts = [];
+        
+        async function loadContacts() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const contactsDiv = document.getElementById('contacts');
+            const countDiv = document.getElementById('contactCount');
+            
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/contacts?order=created_at.desc`, {
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                contacts = await response.json();
+                
+                // 통계 업데이트
+                countDiv.textContent = contacts.length;
+                
+                // 연락처 목록 렌더링
+                renderContacts(contacts);
+                
+            } catch (err) {
+                console.error('연락처 로딩 오류:', err);
+                error.textContent = `연락처를 불러오는 중 오류가 발생했습니다: ${err.message}`;
+                error.style.display = 'block';
+                countDiv.textContent = '오류';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        function renderContacts(contacts) {
+            const contactsDiv = document.getElementById('contacts');
+            
+            if (contacts.length === 0) {
+                contactsDiv.innerHTML = `
+                    <div class="contact-card">
+                        <p>📭 아직 접수된 연락처가 없습니다.</p>
+                        <p>웹사이트에서 연락처 폼을 테스트해보세요!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            contactsDiv.innerHTML = contacts.map(contact => `
+                <div class="contact-card">
+                    <div class="contact-header">
+                        <div class="contact-name">${escapeHtml(contact.name)}</div>
+                        <div class="contact-date">${new Date(contact.created_at).toLocaleString('ko-KR')}</div>
+                    </div>
+                    
+                    <div class="contact-info">
+                        <div class="info-item">
+                            <div class="info-label">이메일</div>
+                            <div class="info-value">
+                                <a href="mailto:${contact.email}">${escapeHtml(contact.email)}</a>
+                            </div>
+                        </div>
+                        
+                        ${contact.company ? `
+                            <div class="info-item">
+                                <div class="info-label">회사명</div>
+                                <div class="info-value">${escapeHtml(contact.company)}</div>
+                            </div>
+                        ` : ''}
+                        
+                        ${contact.phone ? `
+                            <div class="info-item">
+                                <div class="info-label">연락처</div>
+                                <div class="info-value">
+                                    <a href="tel:${contact.phone}">${escapeHtml(contact.phone)}</a>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="contact-proposal">
+                        <div class="proposal-label">💬 제안 내용</div>
+                        <div class="proposal-text">${escapeHtml(contact.proposal).replace(/\n/g, '<br>')}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function exportContacts() {
+            if (contacts.length === 0) {
+                alert('내보낼 연락처가 없습니다.');
+                return;
+            }
+            
+            const csvContent = [
+                ['이름', '이메일', '회사명', '연락처', '제안내용', '접수일시'],
+                ...contacts.map(contact => [
+                    contact.name,
+                    contact.email,
+                    contact.company || '',
+                    contact.phone || '',
+                    contact.proposal.replace(/"/g, '""'),
+                    new Date(contact.created_at).toLocaleString('ko-KR')
+                ])
+            ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `previt-contacts-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+        
+        // 페이지 로드 시 연락처 불러오기
+        document.addEventListener('DOMContentLoaded', loadContacts);
+    </script>
+</body>
+</html>

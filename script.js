@@ -158,80 +158,84 @@ document.addEventListener('DOMContentLoaded', function() {
     function initContactForm() {
         const contactForm = document.querySelector('.contact-form');
         if (contactForm) {
-            contactForm.addEventListener('submit', function(e) {
+            contactForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                // Get CSRF token
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                
-                // Get form data
-                const formData = new FormData(this);
+                // Get form inputs
                 const inputs = this.querySelectorAll('input');
                 const data = {};
                 
                 inputs.forEach(input => {
-                    if (input.placeholder) {
-                        data[input.placeholder] = input.value.trim();
+                    const placeholder = input.placeholder;
+                    if (placeholder) {
+                        data[placeholder] = input.value.trim();
                     }
                 });
                 
+                // Map Korean placeholders to English keys
+                const submitData = {
+                    name: data['이름'] || '',
+                    email: data['이메일'] || '',
+                    company: data['회사명'] || '',
+                    phone: data['연락처'] || '',
+                    proposal: data['제안 사항'] || ''
+                };
+                
                 // Enhanced validation
-                if (!data['이름'] || !data['이메일'] || !data['제안 사항']) {
+                if (!submitData.name || !submitData.email || !submitData.proposal) {
                     alert('이름, 이메일, 제안 사항은 필수 입력 항목입니다.');
                     return;
                 }
                 
                 // Email validation
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(data['이메일'])) {
+                if (!emailRegex.test(submitData.email)) {
                     alert('올바른 이메일 주소를 입력해주세요.');
                     return;
                 }
                 
                 // Phone number validation (if provided)
-                if (data['연락처'] && data['연락처'].length > 0) {
+                if (submitData.phone && submitData.phone.length > 0) {
                     const phoneRegex = /^[0-9-+\s()]+$/;
-                    if (!phoneRegex.test(data['연락처'])) {
+                    if (!phoneRegex.test(submitData.phone)) {
                         alert('올바른 연락처 형식을 입력해주세요.');
                         return;
                     }
                 }
                 
-                // Input sanitization
-                Object.keys(data).forEach(key => {
-                    data[key] = data[key].replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-                    data[key] = data[key].replace(/[<>]/g, '');
-                });
+                // Show loading state
+                const submitButton = this.querySelector('.submit-button');
+                const originalText = submitButton.textContent;
+                submitButton.textContent = '전송 중...';
+                submitButton.disabled = true;
                 
-                // Prepare data for submission
-                const submitData = {
-                    ...data,
-                    timestamp: new Date().toISOString(),
-                    userAgent: navigator.userAgent.substring(0, 200) // Limit length
-                };
-                
-                // TODO: Replace with actual server endpoint
-                // fetch('/api/contact', {
-                //     method: 'POST',
-                //     headers: {
-                //         'Content-Type': 'application/json',
-                //         'X-CSRF-TOKEN': csrfToken
-                //     },
-                //     body: JSON.stringify(submitData)
-                // }).then(response => response.json())
-                //   .then(data => {
-                //       alert('제안이 성공적으로 전송되었습니다!');
-                //       this.reset();
-                //   })
-                //   .catch(error => {
-                //       alert('전송 중 오류가 발생했습니다. 다시 시도해주세요.');
-                //   });
-                
-                // For now, show success message
-                alert('제안이 성공적으로 전송되었습니다!\n\n빠른 시일 내에 연락드리겠습니다.');
-                
-                // Reset form
-                this.reset();
+                try {
+                    // Submit to Netlify Function
+                    const response = await fetch('/.netlify/functions/submit-contact', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(submitData)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok && result.success) {
+                        alert('제안이 성공적으로 전송되었습니다!\n\n빠른 시일 내에 연락드리겠습니다.');
+                        this.reset();
+                    } else {
+                        throw new Error(result.error || 'Unknown error');
+                    }
+                    
+                } catch (error) {
+                    console.error('Form submission error:', error);
+                    alert('전송 중 오류가 발생했습니다. 다시 시도해주세요.');
+                } finally {
+                    // Restore button state
+                    submitButton.textContent = originalText;
+                    submitButton.disabled = false;
+                }
             });
 
             // Add ripple effect to submit button

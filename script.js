@@ -314,6 +314,40 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Navigation functionality
+    function initNavigation() {
+        const navItems = document.querySelectorAll('.nav-item');
+        const navIndicator = document.querySelector('.nav-indicator');
+        
+        navItems.forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                const rect = this.getBoundingClientRect();
+                const headerRect = document.querySelector('.main-header').getBoundingClientRect();
+                
+                navIndicator.style.left = (rect.left - headerRect.left + rect.width / 2 - 44.5) + 'px';
+                navIndicator.style.transform = 'translateX(0)';
+                navIndicator.classList.add('active');
+            });
+        });
+        
+        document.querySelector('.main-header').addEventListener('mouseleave', function() {
+            navIndicator.classList.remove('active');
+        });
+        
+        // Handle page navigation with indicator
+        navItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const href = this.getAttribute('href');
+                
+                // Add a small delay for visual feedback
+                setTimeout(() => {
+                    window.location.href = href;
+                }, 200);
+            });
+        });
+    }
+
     // Initialize all animations and interactions
     addFloatingKeyframes();
     addRippleKeyframes();
@@ -323,6 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initContactForm();
     initParallaxEffect();
     initSmoothScroll();
+    initNavigation();
 
     // Add loading animation
     document.body.style.opacity = '0';

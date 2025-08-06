@@ -449,7 +449,7 @@ body {
 .team-section {
     min-height: 100vh;
     padding: 120px 0;
-    background: var(--white);
+    background: #EDF2FB;
     position: relative;
     display: flex;
     align-items: center;

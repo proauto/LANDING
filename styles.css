@@ -951,20 +951,31 @@ body {
         margin-bottom: 40px;
     }
     
+    .how-we-work-section .container {
+        padding: 0 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
     .work-cards {
         grid-template-columns: 1fr;
         gap: 24px;
-        padding: 0 20px;
+        padding: 0;
         max-width: 100%;
         margin: 0 auto;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
     
     .work-card {
         padding: 32px 24px;
         width: 100%;
         box-sizing: border-box;
-        max-width: 400px;
-        margin: 0 auto;
+        max-width: 350px;
+        margin: 0;
     }
     
     .work-card h3 {
@@ -1099,6 +1110,28 @@ body {
     
     .section-title {
         font-size: 24px;
+    }
+    
+    .how-we-work-section .container {
+        padding: 0 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .work-cards {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        padding: 0;
+        width: 100%;
+    }
+    
+    .work-card {
+        max-width: 320px;
+        width: 100%;
+        margin: 0;
     }
     
     .mission-content h2 {

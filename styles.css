@@ -633,6 +633,27 @@ body {
         width: 90%;
     }
     
+    .middle-image {
+        width: 90%;
+        max-width: 400px;
+        height: auto;
+        top: 120px;
+    }
+    
+    .service-main-text {
+        top: 480px;
+        font-size: 28px;
+        white-space: normal;
+        width: 90%;
+        line-height: 1.3;
+    }
+    
+    .service-description-text {
+        top: 560px;
+        font-size: 20px;
+        width: 90%;
+    }
+    
     .service-content {
         grid-template-columns: 1fr;
         gap: 40px;
@@ -736,6 +757,27 @@ body {
         top: 360px;
         font-size: 16px;
         white-space: normal;
+        width: 95%;
+    }
+    
+    .middle-image {
+        width: 95%;
+        max-width: 320px;
+        height: auto;
+        top: 100px;
+    }
+    
+    .service-main-text {
+        top: 420px;
+        font-size: 22px;
+        white-space: normal;
+        width: 95%;
+        line-height: 1.3;
+    }
+    
+    .service-description-text {
+        top: 490px;
+        font-size: 16px;
         width: 95%;
     }
     

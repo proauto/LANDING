@@ -1,4 +1,59 @@
 const { createClient } = require('@supabase/supabase-js');
+const https = require('https');
+const { URL } = require('url');
+
+// 슬랙 알림 전송 함수
+async function sendSlackNotification(data) {
+    const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL;
+    
+    if (!slackWebhookUrl) {
+        console.log('SLACK_WEBHOOK_URL not configured, skipping Slack notification');
+        return;
+    }
+
+    const message = {
+        text: `새로운 문의가 접수되었습니다!\n이름: ${data.name}\n이메일: ${data.email}\n회사: ${data.company}\n연락처: ${data.phone}\n제안사항: ${data.proposal.substring(0, 100)}${data.proposal.length > 100 ? '...' : ''}\n접수시간: ${data.submittedAt}`
+    };
+
+    return new Promise((resolve, reject) => {
+        const url = new URL(slackWebhookUrl);
+        const payload = JSON.stringify(message);
+        
+        const options = {
+            hostname: url.hostname,
+            port: url.port || 443,
+            path: url.pathname,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload)
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+            
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    resolve({ status: res.statusCode, data });
+                } else {
+                    reject(new Error(`Slack API error: ${res.statusCode} ${res.statusMessage}`));
+                }
+            });
+        });
+
+        req.on('error', (error) => {
+            reject(error);
+        });
+
+        req.write(payload);
+        req.end();
+    });
+}
 
 exports.handler = async (event, context) => {
     // CORS 헤더
@@ -107,6 +162,24 @@ exports.handler = async (event, context) => {
         }
 
         console.log('Data inserted successfully:', data);
+
+        // 슬랙 알림 전송 (선택적)
+        if (process.env.SLACK_WEBHOOK_URL) {
+            try {
+                await sendSlackNotification({
+                    name: insertData.name,
+                    email: insertData.email,
+                    company: insertData.company || '미기입',
+                    phone: insertData.phone || '미기입',
+                    proposal: insertData.proposal,
+                    submittedAt: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
+                });
+                console.log('Slack notification sent successfully');
+            } catch (slackError) {
+                console.error('Slack notification failed:', slackError);
+                // 슬랙 전송 실패해도 전체 프로세스는 성공으로 처리
+            }
+        }
 
         return {
             statusCode: 200,
